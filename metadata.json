@@ -1,0 +1,8 @@
+{
+  "uuid": "toggle-activities-overlay-key@jstuder-gh.github.io",
+  "name": "Toggle Activities Overlay Key",
+  "description": "Toggle the activities overlay key on and off",
+  "version": 1,
+  "shell-version": ["3.36"],
+  "url": "https://github.com/jstuder-gh/gnome-shell-extension-toggle-activities-overlay-key"
+}
