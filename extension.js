@@ -98,7 +98,9 @@ function enable() {
 
     ext = new Extension();
 
-    Main.panel.addToStatusArea(`${Me.metadata.name}  Extension`, ext);
+    // Place menu to the left of the "Activities" entry
+    const index = Main.sessionMode.panel.left.indexOf('activities');
+    Main.panel.addToStatusArea(`${Me.metadata.name}  Extension`, ext, index, 'left');
 }
 
 function disable() {
