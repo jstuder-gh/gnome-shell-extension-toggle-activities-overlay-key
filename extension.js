@@ -68,13 +68,22 @@ let Extension = class Extension extends PanelMenu.Button {
         ]));
         log(`Xkb-opts Modified IS: ${this.xkbOptsModified}`);
 
+        // Turn off Activities overlay and set Meta to Win
+        const fnToggleSettingsOff = () => {
+            this.mutterSettings.set_string(MUTTER_OVERLAY_KEY, '');
+            this.desktopSettings.set_strv(DESKTOP_XKB_OPTS_KEY, this.xkbOptsModified);
+        };
+        // Turn on Activities overlay and set Meta to original value
+        const fnToggleSettingsOn = () => {
+            this.mutterSettings.set_string(MUTTER_OVERLAY_KEY, this.overlayKeyOriginal);
+            this.desktopSettings.set_strv(DESKTOP_XKB_OPTS_KEY, this.xkbOptsOriginal);
+        }
 
         // Add menu items and actions
         const offItem = new PopupMenu.PopupMenuItem('Activities Overlay Key Off');
         offItem.actor.visible = true;
         offItem.connect('activate', () => {
-            this.mutterSettings.set_string(MUTTER_OVERLAY_KEY, '');
-            this.desktopSettings.set_strv(DESKTOP_XKB_OPTS_KEY, this.xkbOptsModified);
+            fnToggleSettingsOff();
             onItem.actor.visible = true;
             offItem.actor.visible = false;
         });
@@ -82,8 +91,7 @@ let Extension = class Extension extends PanelMenu.Button {
         const onItem  = new PopupMenu.PopupMenuItem('Activities Overlay Key On');
         onItem.actor.visible = false;
         onItem.connect('activate', () => {
-            this.mutterSettings.set_string(MUTTER_OVERLAY_KEY, this.overlayKeyOriginal);
-            this.desktopSettings.set_strv(DESKTOP_XKB_OPTS_KEY, this.xkbOptsOriginal);
+            fnToggleSettingsOn();
             onItem.actor.visible = false;
             offItem.actor.visible = true;
         });
@@ -93,9 +101,7 @@ let Extension = class Extension extends PanelMenu.Button {
     }
 
     destroy() {
-        this.mutterSettings.set_string(MUTTER_OVERLAY_KEY, this.overlayKeyOriginal);
-        this.desktopSettings.set_strv(DESKTOP_XKB_OPTS_KEY, this.xkbOptsOriginal);
-
+        fnToggleSettingsOn();
         super.destroy();
     }
 };
