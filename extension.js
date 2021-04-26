@@ -18,28 +18,34 @@ const SHELL_MINOR = parseInt(Config.PACKAGE_VERSION.split('.')[1]);
 const MUTTER_SETTINGS    = 'org.gnome.mutter';
 const MUTTER_OVERLAY_KEY = 'overlay-key';
 
+// Set Left Win key to Meta
+const DESKTOP_SETTINGS   = 'org.gnome.desktop.input-sources';
+const DESKTOP_XKB_OPTS_KEY = 'xkb-options';
+const DESKTOP_XKB_OPTS_VAL = 'altwin:left_meta_win';
+
 const THEMED_ICON_NAME        = 'view-more-symbolic';
 const THEMED_ICON_STYLE_CLASS = 'system-status-icon';
 
 // TODO: Implement translation via Gettext
 
 // Check for existing Mutter settings obj
-const getMutterSettings = () => {
+const getSettings = (settingsKey) => {
     try {
-        const settings = ExtensionUtils.getSettings(MUTTER_SETTINGS);
+        const settings = ExtensionUtils.getSettings(settingsKey);
         return settings;
     }
     catch (e) {
-        log(`Unable to retrieve existing "${MUTTER_SETTINGS}" settings obj. Creating.`)
+        log(`Unable to retrieve existing "${settingsKey}" settings obj. Creating.`)
     }
-    return new Gio.Settings({ schema_id: MUTTER_SETTINGS });
+    return new Gio.Settings({ schema_id: settingsKey });
 };
 
 let Extension = class Extension extends PanelMenu.Button {
     _init() {
         super._init(0.0, `${Me.metadata.name} Extension`, false);
 
-        this.settings = getMutterSettings();
+        this.mutterSettings  = getSettings(MUTTER_SETTINGS);
+        this.desktopSettings = getSettings(DESKTOP_SETTINGS);
 
         // Add an icon and menu item
         // TODO: Find appropriate icon;
@@ -50,13 +56,25 @@ let Extension = class Extension extends PanelMenu.Button {
         this.actor.add_child(icon);
 
         // Get original activities overlay key (to restore later)
-        this.overlayKeyOriginal = this.settings.get_string(MUTTER_OVERLAY_KEY);
+        this.overlayKeyOriginal = this.mutterSettings.get_string(MUTTER_OVERLAY_KEY);
+        this.xkbOptsOriginal    = this.desktopSettings.get_strv(DESKTOP_XKB_OPTS_KEY);
+        log(`Overlay Key Orig IS: ${this.overlayKeyOriginal}`);
+        log(`Xkb-opts Orig IS: ${this.xkbOptsOriginal}`);
+
+        // Create modified xkb-options with meta key set (filtering duplicates)
+        this.xkbOptsModified = Array.from(new Set([
+            ...this.xkbOptsOriginal,
+            DESKTOP_XKB_OPTS_VAL,
+        ]));
+        log(`Xkb-opts Modified IS: ${this.xkbOptsModified}`);
+
 
         // Add menu items and actions
         const offItem = new PopupMenu.PopupMenuItem('Activities Overlay Key Off');
         offItem.actor.visible = true;
         offItem.connect('activate', () => {
-            this.settings.set_string(MUTTER_OVERLAY_KEY, '');
+            this.mutterSettings.set_string(MUTTER_OVERLAY_KEY, '');
+            this.desktopSettings.set_strv(DESKTOP_XKB_OPTS_KEY, this.xkbOptsModified);
             onItem.actor.visible = true;
             offItem.actor.visible = false;
         });
@@ -64,7 +82,8 @@ let Extension = class Extension extends PanelMenu.Button {
         const onItem  = new PopupMenu.PopupMenuItem('Activities Overlay Key On');
         onItem.actor.visible = false;
         onItem.connect('activate', () => {
-            this.settings.set_string(MUTTER_OVERLAY_KEY, this.overlayKeyOriginal);
+            this.mutterSettings.set_string(MUTTER_OVERLAY_KEY, this.overlayKeyOriginal);
+            this.desktopSettings.set_strv(DESKTOP_XKB_OPTS_KEY, this.xkbOptsOriginal);
             onItem.actor.visible = false;
             offItem.actor.visible = true;
         });
@@ -74,7 +93,8 @@ let Extension = class Extension extends PanelMenu.Button {
     }
 
     destroy() {
-        this.settings.set_string(MUTTER_OVERLAY_KEY, this.overlayKeyOriginal);
+        this.mutterSettings.set_string(MUTTER_OVERLAY_KEY, this.overlayKeyOriginal);
+        this.desktopSettings.set_strv(DESKTOP_XKB_OPTS_KEY, this.xkbOptsOriginal);
 
         super.destroy();
     }
